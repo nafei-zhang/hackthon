@@ -1,6 +1,6 @@
-package com.hackthon.backend.service;
+package com.hackthon.backend.assistant.service;
 
-import com.hackthon.backend.model.AssistantRouteDecision;
+import com.hackthon.backend.assistant.model.AssistantRouteDecision;
 import java.util.Optional;
 
 public interface AssistantDecisionClient {

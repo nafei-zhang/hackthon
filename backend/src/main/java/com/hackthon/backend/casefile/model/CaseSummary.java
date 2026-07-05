@@ -1,4 +1,4 @@
-package com.hackthon.backend.model;
+package com.hackthon.backend.casefile.model;
 
 public record CaseSummary(
   String caseId,

@@ -1,4 +1,4 @@
-package com.hackthon.backend.model;
+package com.hackthon.backend.casefile.model;
 
 import java.util.List;
 import java.util.Map;

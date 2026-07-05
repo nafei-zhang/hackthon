@@ -1,4 +1,4 @@
-package com.hackthon.backend.model;
+package com.hackthon.backend.assistant.model;
 
 import java.util.Locale;
 

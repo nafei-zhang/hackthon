@@ -1,8 +1,8 @@
-package com.hackthon.backend.controller;
+package com.hackthon.backend.assistant.controller;
 
-import com.hackthon.backend.model.AssistantHtmlResponse;
-import com.hackthon.backend.model.AssistantRequest;
-import com.hackthon.backend.service.AssistantResponseService;
+import com.hackthon.backend.assistant.model.AssistantHtmlResponse;
+import com.hackthon.backend.assistant.model.AssistantRequest;
+import com.hackthon.backend.assistant.service.AssistantResponseService;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

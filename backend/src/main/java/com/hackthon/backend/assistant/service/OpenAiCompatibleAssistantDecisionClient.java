@@ -1,10 +1,10 @@
-package com.hackthon.backend.service;
+package com.hackthon.backend.assistant.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hackthon.backend.config.AssistantAiProperties;
-import com.hackthon.backend.model.AssistantIntent;
-import com.hackthon.backend.model.AssistantRouteDecision;
+import com.hackthon.backend.assistant.config.AssistantAiProperties;
+import com.hackthon.backend.assistant.model.AssistantIntent;
+import com.hackthon.backend.assistant.model.AssistantRouteDecision;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,12 +38,22 @@ public class OpenAiCompatibleAssistantDecisionClient implements AssistantDecisio
     }
 
     try {
-      String responseBody = restClient.post()
+      RestClient.RequestBodySpec request = restClient.post()
         .uri(resolveCompletionUrl())
         .header(HttpHeaders.AUTHORIZATION, "Bearer " + properties.getApiKey())
-        .contentType(MediaType.APPLICATION_JSON)
-        .accept(MediaType.APPLICATION_JSON)
-        .body(buildRequestBody(prompt, activeTab))
+        .contentType(MediaType.APPLICATION_JSON);
+
+      if (properties.isGithubModelsProvider()) {
+        request = request.header(HttpHeaders.ACCEPT, "application/vnd.github+json");
+
+        if (!isBlank(properties.getGithubApiVersion())) {
+          request = request.header("X-GitHub-Api-Version", properties.getGithubApiVersion());
+        }
+      } else {
+        request = request.accept(MediaType.APPLICATION_JSON);
+      }
+
+      String responseBody = request.body(buildRequestBody(prompt, activeTab))
         .retrieve()
         .body(String.class);
 

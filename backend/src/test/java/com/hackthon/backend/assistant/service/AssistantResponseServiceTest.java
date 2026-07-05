@@ -1,13 +1,21 @@
-package com.hackthon.backend.service;
+package com.hackthon.backend.assistant.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hackthon.backend.casefile.service.CaseSummaryService;
+import com.hackthon.backend.casefile.service.MockCaseDataFactory;
+import com.hackthon.backend.casefile.service.MockCaseDataService;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class AssistantResponseServiceTest {
 
-  private final AssistantResponseService assistantResponseService = new AssistantResponseService(new MockDataService());
+  private final AssistantResponseService assistantResponseService = new AssistantResponseService(
+    new CaseSummaryService(),
+    new MockCaseDataService(new MockCaseDataFactory()),
+    new AssistantRoutingService((prompt, activeTab) -> Optional.empty())
+  );
 
   @Test
   void returnsKycProfileForChineseUserDetailPrompt() {
@@ -21,6 +29,7 @@ class AssistantResponseServiceTest {
     assertThat(html).contains("Please show me the detailed customer information for the current case.");
     assertThat(html).contains("KYC profile mock data");
     assertThat(html).contains("Customer Id");
+    assertThat(html).contains("Route source:</strong> Rule fallback");
   }
 
   @Test
@@ -51,6 +60,7 @@ class AssistantResponseServiceTest {
     assertThat(markdown).contains("Please show me the historical transfer records for the customer in the current case.");
     assertThat(markdown).contains("Transaction review mock data");
     assertThat(markdown).contains("| Counterparty |");
+    assertThat(markdown).contains("**Route source:** Rule fallback");
   }
 
   @Test
@@ -80,5 +90,6 @@ class AssistantResponseServiceTest {
     assertThat(html).contains("Risk assessment conclusion");
     assertThat(html).contains("Aggregated risk signals");
     assertThat(html).contains("Reasoning prompt template");
+    assertThat(html).contains("Route source:</strong> Rule fallback");
   }
 }

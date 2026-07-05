@@ -1,11 +1,12 @@
-package com.hackthon.backend.controller;
+package com.hackthon.backend.casefile.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hackthon.backend.model.CaseSummary;
-import com.hackthon.backend.model.PagedResponse;
-import com.hackthon.backend.model.TableQuery;
-import com.hackthon.backend.service.MockDataService;
+import com.hackthon.backend.casefile.model.CaseSummary;
+import com.hackthon.backend.casefile.model.PagedResponse;
+import com.hackthon.backend.casefile.model.TableQuery;
+import com.hackthon.backend.casefile.service.CaseSummaryService;
+import com.hackthon.backend.casefile.service.MockCaseDataService;
 import java.util.List;
 import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,17 +19,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/cases")
 public class CaseController {
 
-  private final MockDataService mockDataService;
+  private final CaseSummaryService caseSummaryService;
+  private final MockCaseDataService mockCaseDataService;
   private final ObjectMapper objectMapper;
 
-  public CaseController(MockDataService mockDataService, ObjectMapper objectMapper) {
-    this.mockDataService = mockDataService;
+  public CaseController(CaseSummaryService caseSummaryService, MockCaseDataService mockCaseDataService, ObjectMapper objectMapper) {
+    this.caseSummaryService = caseSummaryService;
+    this.mockCaseDataService = mockCaseDataService;
     this.objectMapper = objectMapper;
   }
 
   @GetMapping("/{caseId}/summary")
   public CaseSummary getCaseSummary(@PathVariable String caseId) {
-    return mockDataService.buildCaseSummary(caseId);
+    return caseSummaryService.buildCaseSummary(caseId);
   }
 
   @GetMapping("/{caseId}/kyc-profile")
@@ -42,7 +45,7 @@ public class CaseController {
     @RequestParam(required = false) String sortOrder,
     @RequestParam(required = false) String filters
   ) {
-    return mockDataService.buildKycProfileResponse(caseId, buildQuery(page, pageSize, keyword, globalSearch, sortField, sortOrder, filters));
+    return mockCaseDataService.buildKycProfileResponse(caseId, buildQuery(page, pageSize, keyword, globalSearch, sortField, sortOrder, filters));
   }
 
   @GetMapping("/{caseId}/previous-investigation")
@@ -56,7 +59,7 @@ public class CaseController {
     @RequestParam(required = false) String sortOrder,
     @RequestParam(required = false) String filters
   ) {
-    return mockDataService.buildPreviousInvestigationResponse(caseId, buildQuery(page, pageSize, keyword, globalSearch, sortField, sortOrder, filters));
+    return mockCaseDataService.buildPreviousInvestigationResponse(caseId, buildQuery(page, pageSize, keyword, globalSearch, sortField, sortOrder, filters));
   }
 
   @GetMapping("/{caseId}/transaction-review")
@@ -70,7 +73,7 @@ public class CaseController {
     @RequestParam(required = false) String sortOrder,
     @RequestParam(required = false) String filters
   ) {
-    return mockDataService.buildTransactionReviewResponse(caseId, buildQuery(page, pageSize, keyword, globalSearch, sortField, sortOrder, filters));
+    return mockCaseDataService.buildTransactionReviewResponse(caseId, buildQuery(page, pageSize, keyword, globalSearch, sortField, sortOrder, filters));
   }
 
   @GetMapping("/{caseId}/bad-connections")
@@ -84,7 +87,7 @@ public class CaseController {
     @RequestParam(required = false) String sortOrder,
     @RequestParam(required = false) String filters
   ) {
-    return mockDataService.buildBadConnectionsResponse(caseId, buildQuery(page, pageSize, keyword, globalSearch, sortField, sortOrder, filters));
+    return mockCaseDataService.buildBadConnectionsResponse(caseId, buildQuery(page, pageSize, keyword, globalSearch, sortField, sortOrder, filters));
   }
 
   private TableQuery buildQuery(

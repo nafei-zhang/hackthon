@@ -1,7 +1,11 @@
-package com.hackthon.backend.service;
+package com.hackthon.backend.assistant.service;
 
-import com.hackthon.backend.model.CaseSummary;
-import com.hackthon.backend.model.TableQuery;
+import com.hackthon.backend.assistant.model.AssistantIntent;
+import com.hackthon.backend.assistant.model.AssistantRouteDecision;
+import com.hackthon.backend.casefile.model.CaseSummary;
+import com.hackthon.backend.casefile.model.TableQuery;
+import com.hackthon.backend.casefile.service.CaseSummaryService;
+import com.hackthon.backend.casefile.service.MockCaseDataService;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,37 +25,67 @@ public class AssistantResponseService {
   private static final int PREVIEW_LIMIT = 5;
   private static final Pattern STREAM_CHUNK_PATTERN = Pattern.compile("\\S+|\\s+");
 
-  private final MockDataService mockDataService;
+  private final CaseSummaryService caseSummaryService;
+  private final MockCaseDataService mockCaseDataService;
+  private final AssistantRoutingService assistantRoutingService;
 
-  public AssistantResponseService(MockDataService mockDataService) {
-    this.mockDataService = mockDataService;
+  public AssistantResponseService(
+    CaseSummaryService caseSummaryService,
+    MockCaseDataService mockCaseDataService,
+    AssistantRoutingService assistantRoutingService
+  ) {
+    this.caseSummaryService = caseSummaryService;
+    this.mockCaseDataService = mockCaseDataService;
+    this.assistantRoutingService = assistantRoutingService;
   }
 
   public String buildHtml(String prompt, String caseId, String activeTab) {
     String resolvedCaseId = resolveCaseId(caseId);
-    AssistantIntent intent = detectIntent(prompt, activeTab);
+    AssistantRouteDecision decision = assistantRoutingService.resolve(prompt, activeTab);
+    AssistantIntent intent = decision.intent();
 
     return switch (intent) {
-      case KYC_PROFILE -> buildDatasetHtml(prompt, resolvedCaseId, intent, getKycRows(resolvedCaseId));
-      case PREVIOUS_INVESTIGATION -> buildDatasetHtml(prompt, resolvedCaseId, intent, getPreviousInvestigationRows(resolvedCaseId));
-      case TRANSACTION_REVIEW -> buildDatasetHtml(prompt, resolvedCaseId, intent, getTransactionReviewRows(resolvedCaseId));
-      case BAD_CONNECTIONS -> buildDatasetHtml(prompt, resolvedCaseId, intent, getBadConnectionsRows(resolvedCaseId));
-      case RISK_ASSESSMENT -> buildRiskAssessmentHtml(prompt, resolvedCaseId);
-      case CURRENT_TAB_PREVIEW -> buildDatasetHtml(prompt, resolvedCaseId, intentForActiveTab(activeTab), getRowsForTab(resolvedCaseId, activeTab));
+      case KYC_PROFILE -> buildDatasetHtml(prompt, resolvedCaseId, decision, getKycRows(resolvedCaseId));
+      case PREVIOUS_INVESTIGATION -> buildDatasetHtml(prompt, resolvedCaseId, decision, getPreviousInvestigationRows(resolvedCaseId));
+      case TRANSACTION_REVIEW -> buildDatasetHtml(prompt, resolvedCaseId, decision, getTransactionReviewRows(resolvedCaseId));
+      case BAD_CONNECTIONS -> buildDatasetHtml(prompt, resolvedCaseId, decision, getBadConnectionsRows(resolvedCaseId));
+      case RISK_ASSESSMENT -> buildRiskAssessmentHtml(prompt, resolvedCaseId, decision);
+      case CURRENT_TAB_PREVIEW -> buildDatasetHtml(
+        prompt,
+        resolvedCaseId,
+        new AssistantRouteDecision(
+          AssistantIntent.fromActiveTab(activeTab),
+          decision.standardEnglishRequestOrDefault(),
+          decision.routeSourceOrDefault(),
+          decision.routeReasoningOrDefault()
+        ),
+        getRowsForTab(resolvedCaseId, activeTab)
+      );
     };
   }
 
   public List<String> buildStreamChunks(String prompt, String caseId, String activeTab) {
     String resolvedCaseId = resolveCaseId(caseId);
-    AssistantIntent intent = detectIntent(prompt, activeTab);
+    AssistantRouteDecision decision = assistantRoutingService.resolve(prompt, activeTab);
+    AssistantIntent intent = decision.intent();
 
     String markdown = switch (intent) {
-      case KYC_PROFILE -> buildDatasetMarkdown(prompt, resolvedCaseId, intent, getKycRows(resolvedCaseId));
-      case PREVIOUS_INVESTIGATION -> buildDatasetMarkdown(prompt, resolvedCaseId, intent, getPreviousInvestigationRows(resolvedCaseId));
-      case TRANSACTION_REVIEW -> buildDatasetMarkdown(prompt, resolvedCaseId, intent, getTransactionReviewRows(resolvedCaseId));
-      case BAD_CONNECTIONS -> buildDatasetMarkdown(prompt, resolvedCaseId, intent, getBadConnectionsRows(resolvedCaseId));
-      case RISK_ASSESSMENT -> buildRiskAssessmentMarkdown(prompt, resolvedCaseId);
-      case CURRENT_TAB_PREVIEW -> buildDatasetMarkdown(prompt, resolvedCaseId, intentForActiveTab(activeTab), getRowsForTab(resolvedCaseId, activeTab));
+      case KYC_PROFILE -> buildDatasetMarkdown(prompt, resolvedCaseId, decision, getKycRows(resolvedCaseId));
+      case PREVIOUS_INVESTIGATION -> buildDatasetMarkdown(prompt, resolvedCaseId, decision, getPreviousInvestigationRows(resolvedCaseId));
+      case TRANSACTION_REVIEW -> buildDatasetMarkdown(prompt, resolvedCaseId, decision, getTransactionReviewRows(resolvedCaseId));
+      case BAD_CONNECTIONS -> buildDatasetMarkdown(prompt, resolvedCaseId, decision, getBadConnectionsRows(resolvedCaseId));
+      case RISK_ASSESSMENT -> buildRiskAssessmentMarkdown(prompt, resolvedCaseId, decision);
+      case CURRENT_TAB_PREVIEW -> buildDatasetMarkdown(
+        prompt,
+        resolvedCaseId,
+        new AssistantRouteDecision(
+          AssistantIntent.fromActiveTab(activeTab),
+          decision.standardEnglishRequestOrDefault(),
+          decision.routeSourceOrDefault(),
+          decision.routeReasoningOrDefault()
+        ),
+        getRowsForTab(resolvedCaseId, activeTab)
+      );
     };
 
     return STREAM_CHUNK_PATTERN.matcher(markdown)
@@ -60,7 +94,8 @@ public class AssistantResponseService {
       .toList();
   }
 
-  private String buildDatasetHtml(String prompt, String caseId, AssistantIntent intent, List<Map<String, Object>> rows) {
+  private String buildDatasetHtml(String prompt, String caseId, AssistantRouteDecision decision, List<Map<String, Object>> rows) {
+    AssistantIntent intent = decision.intent();
     List<Map<String, Object>> previewRows = previewRows(rows);
 
     return """
@@ -77,11 +112,13 @@ public class AssistantResponseService {
           <span style="display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 999px; background: #ffffff; border: 1px solid #dbe7f5; font-size: 12px; color: #334155;"><strong style="margin-right: 4px; color: #0f172a;">Matched module:</strong> %s</span>
           <span style="display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 999px; background: #ffffff; border: 1px solid #dbe7f5; font-size: 12px; color: #334155;"><strong style="margin-right: 4px; color: #0f172a;">Case:</strong> %s</span>
           <span style="display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 999px; background: #ffffff; border: 1px solid #dbe7f5; font-size: 12px; color: #334155;"><strong style="margin-right: 4px; color: #0f172a;">Rows returned:</strong> %s</span>
+          <span style="display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 999px; background: #ffffff; border: 1px solid #dbe7f5; font-size: 12px; color: #334155;"><strong style="margin-right: 4px; color: #0f172a;">Route source:</strong> %s</span>
         </div>
         <div style="padding: 14px 16px; border: 1px solid #e5e7eb; border-radius: 14px; background: #ffffff;">
           <div style="margin-bottom: 8px; font-size: 13px; font-weight: 600; color: #0f172a;">Semantic recognition outcome</div>
           <ul style="margin: 0; padding-left: 18px; color: #475569; font-size: 13px; line-height: 1.8;">
             <li>The request was matched to the <strong>%s</strong> workflow.</li>
+            <li>%s</li>
             <li>The assistant returned the preset dataset for the current case.</li>
             <li>The table below shows the first %s records for quick review.</li>
           </ul>
@@ -102,18 +139,21 @@ public class AssistantResponseService {
       """.formatted(
       escapeHtml(intent.responseTitle()),
       escapeHtml(prompt),
-      escapeHtml(intent.standardEnglishRequest()),
+      escapeHtml(decision.standardEnglishRequestOrDefault()),
       escapeHtml(intent.moduleLabel()),
       escapeHtml(caseId),
       String.valueOf(rows.size()),
+      escapeHtml(decision.routeSourceOrDefault()),
       escapeHtml(intent.moduleLabel()),
+      escapeHtml(decision.routeReasoningOrDefault()),
       String.valueOf(previewRows.size()),
       escapeHtml(intent.responseTableTitle()),
       buildTableHtml(previewRows)
     );
   }
 
-  private String buildDatasetMarkdown(String prompt, String caseId, AssistantIntent intent, List<Map<String, Object>> rows) {
+  private String buildDatasetMarkdown(String prompt, String caseId, AssistantRouteDecision decision, List<Map<String, Object>> rows) {
+    AssistantIntent intent = decision.intent();
     List<Map<String, Object>> previewRows = previewRows(rows);
 
     return """
@@ -124,10 +164,12 @@ public class AssistantResponseService {
       **Matched module:** %s  
       **Case:** %s  
       **Rows returned:** %s
+      **Route source:** %s
 
       ### Semantic recognition outcome
 
       - The request was matched to the **%s** workflow.
+      - %s
       - The assistant returned the preset dataset for the current case.
       - The table below shows the first %s records for quick review.
 
@@ -137,19 +179,21 @@ public class AssistantResponseService {
       """.formatted(
       escapeMarkdown(intent.responseTitle()),
       escapeMarkdown(prompt),
-      escapeMarkdown(intent.standardEnglishRequest()),
+      escapeMarkdown(decision.standardEnglishRequestOrDefault()),
       escapeMarkdown(intent.moduleLabel()),
       escapeMarkdown(caseId),
       String.valueOf(rows.size()),
+      escapeMarkdown(decision.routeSourceOrDefault()),
       escapeMarkdown(intent.moduleLabel()),
+      escapeMarkdown(decision.routeReasoningOrDefault()),
       String.valueOf(previewRows.size()),
       escapeMarkdown(intent.responseTableTitle()),
       buildMarkdownTable(previewRows)
     );
   }
 
-  private String buildRiskAssessmentHtml(String prompt, String caseId) {
-    CaseSummary summary = mockDataService.buildCaseSummary(caseId);
+  private String buildRiskAssessmentHtml(String prompt, String caseId, AssistantRouteDecision decision) {
+    CaseSummary summary = caseSummaryService.buildCaseSummary(caseId);
     List<Map<String, Object>> kycRows = getKycRows(caseId);
     List<Map<String, Object>> previousRows = getPreviousInvestigationRows(caseId);
     List<Map<String, Object>> transactionRows = getTransactionReviewRows(caseId);
@@ -178,10 +222,12 @@ public class AssistantResponseService {
           <span style="display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 999px; background: #ffffff; border: 1px solid #dbe7f5; font-size: 12px; color: #334155;"><strong style="margin-right: 4px; color: #0f172a;">Case:</strong> %s</span>
           <span style="display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 999px; background: %s; color: %s; font-size: 12px; font-weight: 600;">Risk level: %s</span>
           <span style="display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 999px; background: #ffffff; border: 1px solid #dbe7f5; font-size: 12px; color: #334155;"><strong style="margin-right: 4px; color: #0f172a;">Owner:</strong> %s</span>
+          <span style="display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 999px; background: #ffffff; border: 1px solid #dbe7f5; font-size: 12px; color: #334155;"><strong style="margin-right: 4px; color: #0f172a;">Route source:</strong> %s</span>
         </div>
         <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 14px; background: #ffffff;">
           <div style="margin-bottom: 8px; font-size: 13px; font-weight: 600; color: #0f172a;">Risk assessment conclusion</div>
           <p style="margin: 0 0 10px; font-size: 13px; line-height: 1.8; color: #334155;">%s</p>
+          <p style="margin: 0 0 10px; font-size: 12px; line-height: 1.7; color: #64748b;"><strong style="color: #475467;">Routing note:</strong> %s</p>
           <ul style="margin: 0; padding-left: 18px; color: #475569; font-size: 13px; line-height: 1.8;">%s</ul>
         </div>
         <div style="border: 1px solid #e5e7eb; border-radius: 14px; background: #ffffff; overflow: hidden;">
@@ -201,21 +247,23 @@ public class AssistantResponseService {
       """.formatted(
       escapeHtml(AssistantIntent.RISK_ASSESSMENT.responseTitle()),
       escapeHtml(prompt),
-      escapeHtml(AssistantIntent.RISK_ASSESSMENT.standardEnglishRequest()),
+      escapeHtml(decision.standardEnglishRequestOrDefault()),
       escapeHtml(caseId),
       assessment.levelBackground(),
       assessment.levelColor(),
       escapeHtml(assessment.level()),
       escapeHtml(summary.owner()),
+      escapeHtml(decision.routeSourceOrDefault()),
       escapeHtml(assessment.conclusion()),
+      escapeHtml(decision.routeReasoningOrDefault()),
       assessment.evidence().stream().map(item -> "<li>" + escapeHtml(item) + "</li>").collect(Collectors.joining()),
       signalTable,
       escapeHtml(assessment.reasoningPrompt())
     );
   }
 
-  private String buildRiskAssessmentMarkdown(String prompt, String caseId) {
-    CaseSummary summary = mockDataService.buildCaseSummary(caseId);
+  private String buildRiskAssessmentMarkdown(String prompt, String caseId, AssistantRouteDecision decision) {
+    CaseSummary summary = caseSummaryService.buildCaseSummary(caseId);
     List<Map<String, Object>> kycRows = getKycRows(caseId);
     List<Map<String, Object>> previousRows = getPreviousInvestigationRows(caseId);
     List<Map<String, Object>> transactionRows = getTransactionReviewRows(caseId);
@@ -238,10 +286,13 @@ public class AssistantResponseService {
       **Case:** %s  
       **Owner:** %s  
       **Risk level:** %s
+      **Route source:** %s
 
       ### Risk assessment conclusion
 
       %s
+
+      _Routing note: %s_
 
       ### Key evidence
 
@@ -259,11 +310,13 @@ public class AssistantResponseService {
       """.formatted(
       escapeMarkdown(AssistantIntent.RISK_ASSESSMENT.responseTitle()),
       escapeMarkdown(prompt),
-      escapeMarkdown(AssistantIntent.RISK_ASSESSMENT.standardEnglishRequest()),
+      escapeMarkdown(decision.standardEnglishRequestOrDefault()),
       escapeMarkdown(caseId),
       escapeMarkdown(summary.owner()),
       escapeMarkdown(assessment.level()),
+      escapeMarkdown(decision.routeSourceOrDefault()),
       escapeMarkdown(assessment.conclusion()),
+      escapeMarkdown(decision.routeReasoningOrDefault()),
       assessment.evidence().stream().map(item -> "- " + escapeMarkdown(item)).collect(Collectors.joining("\n")),
       signalTable,
       escapeMarkdown(assessment.reasoningPrompt())
@@ -383,75 +436,8 @@ public class AssistantResponseService {
     );
   }
 
-  private AssistantIntent detectIntent(String prompt, String activeTab) {
-    String normalized = normalizePrompt(prompt);
-    String compact = normalized.replace(" ", "");
-
-    if (isRiskAssessmentIntent(normalized, compact)) {
-      return AssistantIntent.RISK_ASSESSMENT;
-    }
-
-    if (isKycIntent(normalized, compact)) {
-      return AssistantIntent.KYC_PROFILE;
-    }
-
-    if (isPreviousInvestigationIntent(normalized, compact)) {
-      return AssistantIntent.PREVIOUS_INVESTIGATION;
-    }
-
-    if (isTransactionIntent(normalized, compact)) {
-      return AssistantIntent.TRANSACTION_REVIEW;
-    }
-
-    if (isBadConnectionsIntent(normalized, compact)) {
-      return AssistantIntent.BAD_CONNECTIONS;
-    }
-
-    return AssistantIntent.CURRENT_TAB_PREVIEW;
-  }
-
-  private boolean isKycIntent(String normalized, String compact) {
-    return containsAny(compact, "帮我查询当前的case的用户详细信息", "当前case用户详细信息", "当前案件用户详细信息", "当前case客户详情", "当前用户信息", "当前客户信息")
-      || (containsAny(normalized, "kyc", "profile", "user details", "user detail", "customer details", "customer detail", "customer information", "client profile")
-      && containsAny(normalized, "current case", "this case", "for this case", "current customer", "this customer", "user in the current case"));
-  }
-
-  private boolean isPreviousInvestigationIntent(String normalized, String compact) {
-    return containsAny(compact, "帮我查询当前case所属用户的历史case信息", "当前case所属用户的历史case信息", "当前案件历史case信息", "历史案例信息", "历史调查信息")
-      || (containsAny(normalized, "history", "historical", "previous", "prior", "past")
-      && containsAny(normalized, "case", "cases", "investigation", "investigations", "alerts")
-      && containsAny(normalized, "customer", "user", "client"));
-  }
-
-  private boolean isTransactionIntent(String normalized, String compact) {
-    return containsAny(compact, "帮我查询当前case所属用户的历史转账信息", "当前case所属用户的历史转账信息", "当前案件历史转账信息", "历史交易信息", "历史转账记录")
-      || (containsAny(normalized, "history", "historical", "previous", "prior", "past")
-      && containsAny(normalized, "transaction", "transactions", "transfer", "transfers", "payment", "payments", "remittance", "wire"));
-  }
-
-  private boolean isBadConnectionsIntent(String normalized, String compact) {
-    return containsAny(compact, "帮我查询当前case的badconnections信息", "当前case的badconnections信息", "badconnections信息", "关联风险人员", "关联风险信息", "坏连接信息")
-      || containsAny(normalized, "bad connections", "bad connection", "risky connections", "risk connections", "linked risky people", "suspicious connections", "connection risk");
-  }
-
-  private boolean isRiskAssessmentIntent(String normalized, String compact) {
-    return containsAny(compact, "帮我判断当前case的风险", "判断当前case的风险", "评估当前case的风险", "风险研判", "当前案件风险")
-      || (containsAny(normalized, "risk", "risky")
-      && containsAny(normalized, "assess", "assessment", "evaluate", "evaluation", "judge", "determine", "analyse", "analyze"));
-  }
-
   private String resolveCaseId(String caseId) {
     return caseId == null || caseId.isBlank() ? DEFAULT_CASE_ID : caseId;
-  }
-
-  private AssistantIntent intentForActiveTab(String activeTab) {
-    return switch (activeTab) {
-      case "previous-investigation" -> AssistantIntent.PREVIOUS_INVESTIGATION;
-      case "transaction-review" -> AssistantIntent.TRANSACTION_REVIEW;
-      case "bad-connections" -> AssistantIntent.BAD_CONNECTIONS;
-      case "kyc-profile" -> AssistantIntent.KYC_PROFILE;
-      default -> AssistantIntent.KYC_PROFILE;
-    };
   }
 
   private List<Map<String, Object>> getRowsForTab(String caseId, String activeTab) {
@@ -465,19 +451,19 @@ public class AssistantResponseService {
   }
 
   private List<Map<String, Object>> getKycRows(String caseId) {
-    return mockDataService.buildKycProfileResponse(caseId, assistantQuery()).data();
+    return mockCaseDataService.buildKycProfileResponse(caseId, assistantQuery()).data();
   }
 
   private List<Map<String, Object>> getPreviousInvestigationRows(String caseId) {
-    return mockDataService.buildPreviousInvestigationResponse(caseId, assistantQuery()).data();
+    return mockCaseDataService.buildPreviousInvestigationResponse(caseId, assistantQuery()).data();
   }
 
   private List<Map<String, Object>> getTransactionReviewRows(String caseId) {
-    return mockDataService.buildTransactionReviewResponse(caseId, assistantQuery()).data();
+    return mockCaseDataService.buildTransactionReviewResponse(caseId, assistantQuery()).data();
   }
 
   private List<Map<String, Object>> getBadConnectionsRows(String caseId) {
-    return mockDataService.buildBadConnectionsResponse(caseId, assistantQuery()).data();
+    return mockCaseDataService.buildBadConnectionsResponse(caseId, assistantQuery()).data();
   }
 
   private TableQuery assistantQuery() {
@@ -613,22 +599,6 @@ public class AssistantResponseService {
     return String.join(" ", formatted);
   }
 
-  private String normalizePrompt(String prompt) {
-    return prompt == null
-      ? ""
-      : prompt.toLowerCase(Locale.ROOT).replaceAll("[^\\p{IsAlphabetic}\\p{IsDigit}\\u4e00-\\u9fff]+", " ").trim();
-  }
-
-  private boolean containsAny(String value, String... tokens) {
-    for (String token : tokens) {
-      if (value.contains(token.toLowerCase(Locale.ROOT))) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
   private String escapeHtml(String value) {
     return value
       .replace("&", "&amp;")
@@ -658,73 +628,6 @@ public class AssistantResponseService {
     }
 
     return row;
-  }
-
-  private enum AssistantIntent {
-    KYC_PROFILE(
-      "KYC Profile Request Recognized",
-      "KYC Profile",
-      "Please show me the detailed customer information for the current case.",
-      "KYC profile mock data"
-    ),
-    PREVIOUS_INVESTIGATION(
-      "Previous Case Request Recognized",
-      "Previous Investigation",
-      "Please show me the historical case information for the customer in the current case.",
-      "Previous investigation mock data"
-    ),
-    TRANSACTION_REVIEW(
-      "Transaction History Request Recognized",
-      "Transaction Review",
-      "Please show me the historical transfer records for the customer in the current case.",
-      "Transaction review mock data"
-    ),
-    BAD_CONNECTIONS(
-      "Bad Connections Request Recognized",
-      "Bad Connections",
-      "Please show me the bad connections information for the current case.",
-      "Bad connections mock data"
-    ),
-    RISK_ASSESSMENT(
-      "Risk Assessment Request Recognized",
-      "Risk Assessment",
-      "Please assess the risk level of the current case based on all related information.",
-      "Aggregated risk assessment"
-    ),
-    CURRENT_TAB_PREVIEW(
-      "Current Tab Request Recognized",
-      "Current Tab Preview",
-      "Please show me the records for the current workspace tab.",
-      "Current tab preview data"
-    );
-
-    private final String responseTitle;
-    private final String moduleLabel;
-    private final String standardEnglishRequest;
-    private final String responseTableTitle;
-
-    AssistantIntent(String responseTitle, String moduleLabel, String standardEnglishRequest, String responseTableTitle) {
-      this.responseTitle = responseTitle;
-      this.moduleLabel = moduleLabel;
-      this.standardEnglishRequest = standardEnglishRequest;
-      this.responseTableTitle = responseTableTitle;
-    }
-
-    public String responseTitle() {
-      return responseTitle;
-    }
-
-    public String moduleLabel() {
-      return moduleLabel;
-    }
-
-    public String standardEnglishRequest() {
-      return standardEnglishRequest;
-    }
-
-    public String responseTableTitle() {
-      return responseTableTitle;
-    }
   }
 
   private record RiskAssessment(

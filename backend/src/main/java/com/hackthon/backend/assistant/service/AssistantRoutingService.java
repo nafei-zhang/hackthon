@@ -1,7 +1,7 @@
-package com.hackthon.backend.service;
+package com.hackthon.backend.assistant.service;
 
-import com.hackthon.backend.model.AssistantIntent;
-import com.hackthon.backend.model.AssistantRouteDecision;
+import com.hackthon.backend.assistant.model.AssistantIntent;
+import com.hackthon.backend.assistant.model.AssistantRouteDecision;
 import java.util.Locale;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
