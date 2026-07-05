@@ -1,0 +1,10 @@
+package com.hackthon.backend.model;
+
+import java.util.List;
+
+public record PagedResponse<T>(
+  List<T> data,
+  int total,
+  boolean success
+) {
+}
