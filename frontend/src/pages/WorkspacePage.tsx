@@ -8,7 +8,7 @@ import type { CaseSummary } from '@/types/case';
 import { isValidCaseId, normalizeCaseId } from '@/utils/case';
 import { Col, Row, Skeleton, Statistic, Tabs, Typography } from 'antd';
 import { Network, SearchCode, ShieldCheck } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 const statItems = [
@@ -42,6 +42,17 @@ export function WorkspacePage() {
   const setCaseId = useCaseStore((state) => state.setCaseId);
   const setActiveTab = useCaseStore((state) => state.setActiveTab);
   const bumpRefreshSeed = useCaseStore((state) => state.bumpRefreshSeed);
+
+  const tabItems = useMemo(
+    () =>
+      TAB_ITEMS.map((item) => ({
+        key: item.key,
+        label: item.label,
+        forceRender: true,
+        children: <BusinessTable tabKey={item.key} caseId={caseId} refreshSeed={refreshSeed} />,
+      })),
+    [caseId, refreshSeed],
+  );
 
   useEffect(() => {
     if (initializedRef.current) {
@@ -151,12 +162,9 @@ export function WorkspacePage() {
         <section className="workspace-tabs">
           <Tabs
             activeKey={activeTab}
+            animated={{ inkBar: true, tabPane: false }}
             onChange={(key) => setActiveTab(key as TabKey)}
-            items={TAB_ITEMS.map((item) => ({
-              key: item.key,
-              label: item.label,
-              children: <BusinessTable tabKey={item.key} caseId={caseId} refreshSeed={refreshSeed} />,
-            }))}
+            items={tabItems}
           />
         </section>
       </main>
