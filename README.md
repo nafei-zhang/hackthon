@@ -13,7 +13,7 @@ Investigator Workspace is a full-stack case investigation demo project with a Re
 ## Project Structure
 
 ```text
-hackthon/
+hackathon/
 ├── frontend/   # React + Vite application
 ├── backend/    # Spring Boot API service
 └── README.md

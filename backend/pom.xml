@@ -11,7 +11,7 @@
     <relativePath/>
   </parent>
 
-  <groupId>com.hackthon</groupId>
+  <groupId>com.hackathon</groupId>
   <artifactId>investigator-backend</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>investigator-backend</name>
