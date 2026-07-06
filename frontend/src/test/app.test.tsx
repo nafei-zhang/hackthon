@@ -14,12 +14,12 @@ describe('Case management app', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.type(screen.getByPlaceholderText('CASE-2026-0001'), 'case-2026-0001');
+    await user.type(screen.getByPlaceholderText('FC260305617670'), 'fc-260305 617670');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     expect(await screen.findByRole('heading', { name: 'Core Workspace' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'KYC profile' })).toBeInTheDocument();
-    expect(await screen.findByText(/CASE-2026-0001/)).toBeInTheDocument();
+    expect(await screen.findByText(/FC260305617670/)).toBeInTheDocument();
     expect((await screen.findAllByText(/CUST-/)).length).toBeGreaterThan(0);
   });
 
@@ -33,17 +33,17 @@ describe('Case management app', () => {
     expect(await screen.findByText('Case ID is not set')).toBeInTheDocument();
     expect(screen.getByText(/Once a valid case ID is submitted/i)).toBeInTheDocument();
 
-    const headerInput = screen.getAllByPlaceholderText('CASE-2026-0001')[0];
+    const headerInput = screen.getAllByPlaceholderText('FC260305617670')[0];
     await user.clear(headerInput);
-    await user.type(headerInput, 'CASE-2026-0099');
+    await user.type(headerInput, 'FC260305617671');
     await user.click(screen.getByRole('button', { name: 'Apply' }));
 
-    expect(await screen.findByText(/CASE-2026-0099/)).toBeInTheDocument();
+    expect(await screen.findByText(/FC260305617671/)).toBeInTheDocument();
     expect((await screen.findAllByText(/CUST-/)).length).toBeGreaterThan(0);
   });
 
   it('supports tab switching, keyword search, and responsive rendering', async () => {
-    window.history.pushState({}, '', '/workspace?caseId=CASE-2026-0003');
+    window.history.pushState({}, '', '/workspace?caseId=FC260305617672');
     setViewport(1280);
 
     const user = userEvent.setup();

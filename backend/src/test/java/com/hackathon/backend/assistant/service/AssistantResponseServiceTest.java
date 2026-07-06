@@ -21,7 +21,7 @@ class AssistantResponseServiceTest {
   void returnsKycProfileForChineseUserDetailPrompt() {
     String html = assistantResponseService.buildHtml(
       "帮我查询当前的case的用户详细信息",
-      "CASE-3333-3333",
+      "FC260305617670",
       "transaction-review"
     );
 
@@ -36,7 +36,7 @@ class AssistantResponseServiceTest {
   void returnsPreviousInvestigationForSemanticEnglishPrompt() {
     String html = assistantResponseService.buildHtml(
       "Please pull the previous case history for the customer in this case.",
-      "CASE-3333-3333",
+      "FC260305617670",
       "kyc-profile"
     );
 
@@ -50,7 +50,7 @@ class AssistantResponseServiceTest {
   void returnsTransactionReviewForChineseTransferPromptInStreamMode() {
     List<String> chunks = assistantResponseService.buildStreamChunks(
       "帮我查询当前case所属用户的历史转账信息",
-      "CASE-3333-3333",
+      "FC260305617670",
       "kyc-profile"
     );
 
@@ -67,7 +67,7 @@ class AssistantResponseServiceTest {
   void returnsBadConnectionsForSemanticPrompt() {
     String html = assistantResponseService.buildHtml(
       "Can you show the risky connections for the current case?",
-      "CASE-3333-3333",
+      "FC260305617670",
       "transaction-review"
     );
 
@@ -81,7 +81,7 @@ class AssistantResponseServiceTest {
   void returnsRiskAssessmentWithAggregatedSignals() {
     String html = assistantResponseService.buildHtml(
       "帮我判断当前case的风险",
-      "CASE-3333-3333",
+      "FC260305617670",
       "kyc-profile"
     );
 

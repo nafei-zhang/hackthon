@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 
 describe('Assistant chat', () => {
   it('opens and closes the floating assistant modal', async () => {
-    window.history.pushState({}, '', '/workspace?caseId=CASE-2026-0001');
+    window.history.pushState({}, '', '/workspace?caseId=FC260305617670');
     const user = userEvent.setup();
     render(<App />);
 
@@ -31,7 +31,7 @@ describe('Assistant chat', () => {
       }),
     );
 
-    window.history.pushState({}, '', '/workspace?caseId=CASE-2026-0001');
+    window.history.pushState({}, '', '/workspace?caseId=FC260305617670');
     const user = userEvent.setup();
     render(<App />);
 
@@ -51,7 +51,7 @@ describe('Assistant chat', () => {
   });
 
   it('supports stream mode and incrementally renders the reply', async () => {
-    window.history.pushState({}, '', '/workspace?caseId=CASE-2026-0002');
+    window.history.pushState({}, '', '/workspace?caseId=FC260305617671');
     const user = userEvent.setup();
     render(<App />);
 
@@ -74,7 +74,7 @@ describe('Assistant chat', () => {
   }, 10000);
 
   it('shows a friendly error when the request fails', async () => {
-    window.history.pushState({}, '', '/workspace?caseId=CASE-2026-0001');
+    window.history.pushState({}, '', '/workspace?caseId=FC260305617670');
     const user = userEvent.setup();
     render(<App />);
 
@@ -99,7 +99,7 @@ describe('Assistant chat', () => {
       }),
     );
 
-    window.history.pushState({}, '', '/workspace?caseId=CASE-2026-0001');
+    window.history.pushState({}, '', '/workspace?caseId=FC260305617670');
     const user = userEvent.setup();
     render(<App />);
 
@@ -133,7 +133,7 @@ describe('Assistant chat', () => {
       fetchAssistantHtmlReply(
         {
           prompt: 'slow request',
-          caseId: 'CASE-2026-0001',
+          caseId: 'FC260305617670',
           activeTab: 'kyc-profile',
         },
         10,

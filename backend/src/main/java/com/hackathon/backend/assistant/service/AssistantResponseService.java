@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class AssistantResponseService {
 
-  private static final String DEFAULT_CASE_ID = "CASE-2026-0001";
+  private static final String DEFAULT_CASE_ID = "FC260305617670";
   private static final int DATA_PAGE_SIZE = 50;
   private static final int PREVIEW_LIMIT = 5;
   private static final Pattern STREAM_CHUNK_PATTERN = Pattern.compile("\\S+|\\s+");

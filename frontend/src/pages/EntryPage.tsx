@@ -45,7 +45,7 @@ export function EntryPage() {
               type="info"
               showIcon
               message="Accepted Case ID Format"
-              description="Use CASE-YYYY-NNNN, for example CASE-2026-0001."
+              description="Use letters and digits only, for example FC260305617670."
             />
 
             <Form form={form} layout="vertical">
@@ -63,14 +63,14 @@ export function EntryPage() {
                         return Promise.resolve();
                       }
 
-                      return Promise.reject(new Error('Format must be CASE-YYYY-NNNN, for example CASE-2026-0001.'));
+                      return Promise.reject(new Error('Use letters and digits only, for example FC260305617670.'));
                     },
                   },
                 ]}
               >
                 <Input
                   size="small"
-                  placeholder="CASE-2026-0001"
+                  placeholder="FC260305617670"
                   onChange={(event) => form.setFieldValue('caseId', normalizeCaseId(event.target.value))}
                 />
               </Form.Item>

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 describe('caseService integration', () => {
   it('returns filtered results for column-level filters', async () => {
-    const response = await fetchTabTableData('kyc-profile', 'CASE-2026-0001', {
+    const response = await fetchTabTableData('kyc-profile', 'FC260305617670', {
       page: 1,
       pageSize: 20,
       filters: {

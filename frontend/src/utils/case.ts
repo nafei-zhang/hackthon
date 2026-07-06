@@ -1,11 +1,18 @@
-export const CASE_ID_PATTERN = /^CASE-\d{4}-\d{4}$/;
+export const CASE_ID_PATTERN = /^[A-Z0-9]{6,32}$/;
 
 export function isValidCaseId(value: string) {
-  return CASE_ID_PATTERN.test(value.trim());
+  const normalized = normalizeCaseId(value);
+  if (!CASE_ID_PATTERN.test(normalized)) {
+    return false;
+  }
+
+  const hasLetter = /[A-Z]/.test(normalized);
+  const hasDigit = /\d/.test(normalized);
+  return hasLetter && hasDigit;
 }
 
 export function normalizeCaseId(value: string) {
-  return value.trim().toUpperCase();
+  return value.replace(/[^a-zA-Z0-9]/g, '').trim().toUpperCase();
 }
 
 export function formatDate(value: string) {

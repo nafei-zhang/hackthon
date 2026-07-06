@@ -174,7 +174,7 @@ export function buildAssistantHtml(prompt: string, caseId: string | undefined, a
 }
 
 export function buildAssistantStreamChunks(prompt: string, caseId: string | undefined, activeTab: string) {
-  const resolvedCaseId = caseId || 'CASE-2026-0001';
+  const resolvedCaseId = caseId || 'FC260305617670';
   const tabLabel = activeTab
     .replace(/-/g, ' ')
     .replace(/\b\w/g, (char: string) => char.toUpperCase());
@@ -198,7 +198,7 @@ export function buildAssistantStreamChunks(prompt: string, caseId: string | unde
   const text =
     `## Case guidance summary\n\n` +
     `**Question:** ${prompt}  \n` +
-    `**Case:** ${caseId || 'Not set (previewing CASE-2026-0001)'}  \n` +
+    `**Case:** ${caseId || 'Not set (previewing FC260305617670)'}  \n` +
     `**Active tab:** ${tabLabel}  \n` +
     `**Preview rows:** ${previewRows.length}\n\n` +
     `### Recommended review actions\n\n` +

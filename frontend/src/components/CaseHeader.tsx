@@ -68,12 +68,12 @@ export function CaseHeader({ caseId, summary, loading, showWarning, onSubmit }: 
                       return Promise.resolve();
                     }
 
-                    return Promise.reject(new Error('Format must be CASE-YYYY-NNNN, for example CASE-2026-0001.'));
+                    return Promise.reject(new Error('Use letters and digits only, for example FC260305617670.'));
                   },
                 },
               ]}
             >
-              <Input size="small" placeholder="CASE-2026-0001" className="case-header-input" />
+              <Input size="small" placeholder="FC260305617670" className="case-header-input" />
             </Form.Item>
             <Form.Item>
               <Button type="primary" htmlType="submit" loading={loading} className="case-header-submit">
