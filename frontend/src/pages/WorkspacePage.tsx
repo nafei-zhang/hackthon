@@ -1,5 +1,6 @@
 import { AssistantChat } from '@/components/AssistantChat';
 import { CaseHeader } from '@/components/CaseHeader';
+import { RiskChainGraph } from '@/components/RiskChainGraph';
 import { BusinessTable } from '@/components/tables/BusinessTable';
 import { TAB_ITEMS, type TabKey } from '@/constants/tabs';
 import { fetchCaseSummary } from '@/services/caseService';
@@ -49,7 +50,12 @@ export function WorkspacePage() {
         key: item.key,
         label: item.label,
         forceRender: true,
-        children: <BusinessTable tabKey={item.key} caseId={caseId} refreshSeed={refreshSeed} />,
+        children:
+          item.key === 'risk-chain' ? (
+            <RiskChainGraph caseId={caseId} />
+          ) : (
+            <BusinessTable tabKey={item.key} caseId={caseId} refreshSeed={refreshSeed} />
+          ),
       })),
     [caseId, refreshSeed],
   );

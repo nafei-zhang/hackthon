@@ -195,6 +195,33 @@ export function buildAssistantStreamChunks(prompt: string, caseId: string | unde
         `| ${columns.map(() => '---').join(' | ')} |`,
         ...previewRows.map((row: TableRow) => `| ${columns.map((column) => String(row[column] ?? '').replace(/\|/g, '\\|')).join(' | ')} |`),
       ].join('\n');
+  
+  // Add mermaid diagram if user asks for diagram/flowchart/chart
+  const includeMermaid = prompt.toLowerCase().includes('diagram') || 
+                        prompt.toLowerCase().includes('flowchart') || 
+                        prompt.toLowerCase().includes('chart') ||
+                        prompt.toLowerCase().includes('mermaid');
+  
+  const mermaidDiagram = includeMermaid ? `
+### Case Relationship Diagram
+
+This diagram shows the relationship flow in the investigation:
+
+\`\`\`mermaid
+graph TD
+    A[Case Initiation] --> B[KYC Verification]
+    B --> C{Risk Assessment}
+    C -->|Low Risk| D[Standard Review]
+    C -->|Medium Risk| E[Enhanced Review]
+    C -->|High/Critical| F[Escalation]
+    D --> G[Case Closure]
+    E --> G
+    F --> H[Investigation Team]
+    H --> G
+\`\`\`
+
+` : '';
+  
   const text =
     `## Case guidance summary\n\n` +
     `**Question:** ${prompt}  \n` +
@@ -205,9 +232,103 @@ export function buildAssistantStreamChunks(prompt: string, caseId: string | unde
     `- Validate the current table results before escalating.\n` +
     `- Cross-check key identifiers shown in the active tab.\n` +
     `- Capture any suspicious pattern for follow-up review.\n\n` +
+    mermaidDiagram +
     `### Mock table preview\n\n` +
     `${table}\n\n` +
     `_Streaming response rendered as markdown in the client._`;
 
   return text.split(/(\s+)/).filter(Boolean);
+}
+
+export function buildRiskChainData(caseId: string) {
+  const seed = seedFromCaseId(caseId);
+  const riskLevels = ['Low', 'Medium', 'High', 'Critical'] as const;
+  const customerNames = ['Lena Wu', 'Daniel Ho', 'Mira Tan', 'Arjun Patel', 'Sarah Chen', 'Mike Liu', 'Emma Wang', 'Tom Zhang'];
+  const companyNames = ['Orion Capital', 'Blue Arc Tech', 'Maritime Group', 'GSNA Advisory', 'Nexus Holdings', 'Apex Corp'];
+  const relationLabels = ['Direct relation', 'Shared ownership', 'Business partner', 'Financial transaction', 'Family relation'];
+  const industries = ['Finance', 'Technology', 'Logistics', 'Consulting', 'Manufacturing'];
+  const emailDomains = ['case-lab.com', 'finance.net', 'techmail.org', 'bizmail.hk'];
+
+  const nodes: any[] = [];
+  const edges: any[] = [];
+
+  nodes.push({
+    id: 'main-customer',
+    type: 'customer',
+    name: pick(customerNames, seed, 0),
+    customerId: `CUST-${seed + 1000}`,
+    riskLevel: pick(riskLevels, seed, 1),
+    isPrimary: true,
+    details: {
+      email: `customer.${seed + 1000}@${pick(emailDomains, seed, 0)}`,
+      mobile: `+65 98${(seed + 1000).toString().padStart(6, '0').slice(0, 6)}`,
+      occupation: pick(occupations, seed, 0),
+      employer: pick(employers, seed, 0),
+      salary: 48000 + (seed % 10) * 6500,
+      nationality: pick(nationalities, seed, 0),
+      address: `${seed + 20} Queen's Road, ${pick(locations, seed, 0)}`,
+      customerSince: `${2014 + (seed % 8)}-${((seed % 9) + 1).toString().padStart(2, '0')}-15`,
+    },
+  });
+
+  const nodeCount = 5 + (seed % 3);
+  for (let i = 0; i < nodeCount; i++) {
+    const nodeType = i % 2 === 0 ? 'customer' : 'company';
+    const name = nodeType === 'customer' ? pick(customerNames, seed, i + 1) : pick(companyNames, seed, i);
+
+    const node: any = {
+      id: `node-${i}`,
+      type: nodeType,
+      name: name,
+      customerId: nodeType === 'customer' ? `CUST-${seed + 1001 + i}` : undefined,
+      riskLevel: pick(riskLevels, seed, i + 2),
+      isPrimary: false,
+    };
+
+    if (nodeType === 'customer') {
+      node.details = {
+        email: `customer.${seed + 1001 + i}@${pick(emailDomains, seed, i + 1)}`,
+        mobile: `+65 98${(seed + 1001 + i).toString().padStart(6, '0').slice(0, 6)}`,
+        occupation: pick(occupations, seed, i + 1),
+        employer: pick(employers, seed, i + 2),
+        salary: 48000 + (i + 1) * 6500,
+        nationality: pick(nationalities, seed, i + 1),
+        address: `${seed + 20 + i + 1} Queen's Road, ${pick(locations, seed, i + 1)}`,
+        customerSince: `${2014 + ((i + 1) % 8)}-${(((i + 1) % 9) + 1).toString().padStart(2, '0')}-15`,
+      };
+    } else {
+      node.details = {
+        registrationNumber: `REG-${seed + 2000 + i}`,
+        industry: pick(industries, seed, i),
+        foundedYear: 1990 + (seed % 30) + i,
+        headquarters: pick(locations, seed, i),
+        employees: 50 + (seed % 200) + i * 20,
+        revenue: 1000000 + (seed % 5000000) + i * 500000,
+      };
+    }
+
+    nodes.push(node);
+  }
+
+  for (let i = 0; i < nodeCount; i++) {
+    edges.push({
+      id: `edge-main-${i}`,
+      source: 'main-customer',
+      target: `node-${i}`,
+      label: pick(relationLabels, seed, i),
+    });
+  }
+
+  for (let i = 0; i < nodeCount - 1; i += 2) {
+    if (i + 1 < nodeCount) {
+      edges.push({
+        id: `edge-${i}-${i + 1}`,
+        source: `node-${i}`,
+        target: `node-${i + 1}`,
+        label: pick(relationLabels, seed, i + nodeCount),
+      });
+    }
+  }
+
+  return { nodes, edges };
 }

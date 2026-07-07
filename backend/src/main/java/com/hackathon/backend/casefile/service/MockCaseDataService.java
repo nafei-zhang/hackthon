@@ -35,6 +35,10 @@ public class MockCaseDataService {
     return buildPagedResponse(mockCaseDataFactory.buildBadConnectionsRows(caseId), query);
   }
 
+  public Map<String, Object> buildRiskChainResponse(String caseId) {
+    return mockCaseDataFactory.buildRiskChainData(caseId);
+  }
+
   public PagedResponse<Map<String, Object>> buildPagedResponse(List<Map<String, Object>> rows, TableQuery query) {
     List<Map<String, Object>> filtered = filterRows(rows, query);
     int page = Math.max(query.page(), 1);

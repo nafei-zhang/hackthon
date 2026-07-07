@@ -7,6 +7,7 @@ import {
   buildPagedResponse,
   buildPreviousInvestigations,
   buildTransactionReviews,
+  buildRiskChainData,
 } from '@/mocks/data';
 import type { TableQuery } from '@/types/case';
 import { delay, http, HttpResponse } from 'msw';
@@ -96,5 +97,8 @@ export const handlers = [
   }),
   http.get('/api/cases/:caseId/bad-connections', async ({ params, request }) => {
     return HttpResponse.json(buildPagedResponse(buildBadConnections(String(params.caseId)), getQuery(request)));
+  }),
+  http.get('/api/cases/:caseId/risk-chain', async ({ params }) => {
+    return HttpResponse.json(buildRiskChainData(String(params.caseId)));
   }),
 ];

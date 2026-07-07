@@ -110,6 +110,102 @@ public class MockCaseDataFactory {
     return rows;
   }
 
+  public Map<String, Object> buildRiskChainData(String caseId) {
+    int seed = seedFromCaseId(caseId);
+    List<Map<String, Object>> nodes = new ArrayList<>();
+    List<Map<String, Object>> edges = new ArrayList<>();
+
+    List<String> riskLevels = List.of("Low", "Medium", "High", "Critical");
+    List<String> customerNames = List.of("Lena Wu", "Daniel Ho", "Mira Tan", "Arjun Patel", "Sarah Chen", "Mike Liu", "Emma Wang", "Tom Zhang");
+    List<String> companyNames = List.of("Orion Capital", "Blue Arc Tech", "Maritime Group", "GSNA Advisory", "Nexus Holdings", "Apex Corp");
+    List<String> relationLabels = List.of("Direct relation", "Shared ownership", "Business partner", "Financial transaction", "Family relation");
+    List<String> industries = List.of("Finance", "Technology", "Logistics", "Consulting", "Manufacturing");
+    List<String> emailDomains = List.of("case-lab.com", "finance.net", "techmail.org", "bizmail.hk");
+
+    nodes.add(row(
+      "id", "main-customer",
+      "type", "customer",
+      "name", pick(customerNames, seed, 0),
+      "customerId", "CUST-" + (seed + 1000),
+      "riskLevel", pick(riskLevels, seed, 1),
+      "isPrimary", true,
+      "details", row(
+        "email", "customer." + (seed + 1000) + "@" + pick(emailDomains, seed, 0),
+        "mobile", buildMobile(seed + 1000),
+        "occupation", pick(OCCUPATIONS, seed, 0),
+        "employer", pick(EMPLOYERS, seed, 0),
+        "salary", 48000 + (seed % 10) * 6500,
+        "nationality", pick(NATIONALITIES, seed, 0),
+        "address", (seed + 20) + " Queen's Road, " + pick(LOCATIONS, seed, 0),
+        "customerSince", LocalDate.of(2014 + (seed % 8), (seed % 9) + 1, 15).toString()
+      )
+    ));
+
+    int nodeCount = 5 + (seed % 3);
+    for (int i = 0; i < nodeCount; i++) {
+      String nodeType = i % 2 == 0 ? "customer" : "company";
+      String name = nodeType.equals("customer") ? pick(customerNames, seed, i + 1) : pick(companyNames, seed, i);
+      
+      Map<String, Object> node = row(
+        "id", "node-" + i,
+        "type", nodeType,
+        "name", name,
+        "customerId", nodeType.equals("customer") ? "CUST-" + (seed + 1001 + i) : null,
+        "riskLevel", pick(riskLevels, seed, i + 2),
+        "isPrimary", false
+      );
+
+      if (nodeType.equals("customer")) {
+        node.put("details", row(
+          "email", "customer." + (seed + 1001 + i) + "@" + pick(emailDomains, seed, i + 1),
+          "mobile", buildMobile(seed + 1001 + i),
+          "occupation", pick(OCCUPATIONS, seed, i + 1),
+          "employer", pick(EMPLOYERS, seed, i + 2),
+          "salary", 48000 + (i + 1) * 6500,
+          "nationality", pick(NATIONALITIES, seed, i + 1),
+          "address", (seed + 20 + i + 1) + " Queen's Road, " + pick(LOCATIONS, seed, i + 1),
+          "customerSince", LocalDate.of(2014 + ((i + 1) % 8), ((i + 1) % 9) + 1, 15).toString()
+        ));
+      } else {
+        node.put("details", row(
+          "registrationNumber", "REG-" + (seed + 2000 + i),
+          "industry", pick(industries, seed, i),
+          "foundedYear", 1990 + (seed % 30) + i,
+          "headquarters", pick(LOCATIONS, seed, i),
+          "employees", 50 + (seed % 200) + i * 20,
+          "revenue", 1000000 + (seed % 5000000) + i * 500000
+        ));
+      }
+
+      nodes.add(node);
+    }
+
+    for (int i = 0; i < nodeCount; i++) {
+      edges.add(row(
+        "id", "edge-main-" + i,
+        "source", "main-customer",
+        "target", "node-" + i,
+        "label", pick(relationLabels, seed, i)
+      ));
+    }
+
+    for (int i = 0; i < nodeCount - 1; i += 2) {
+      if (i + 1 < nodeCount) {
+        edges.add(row(
+          "id", "edge-" + i + "-" + (i + 1),
+          "source", "node-" + i,
+          "target", "node-" + (i + 1),
+          "label", pick(relationLabels, seed, i + nodeCount)
+        ));
+      }
+    }
+
+    return row(
+      "nodes", nodes,
+      "edges", edges
+    );
+  }
+
   private int seedFromCaseId(String caseId) {
     return caseId.chars().sum();
   }

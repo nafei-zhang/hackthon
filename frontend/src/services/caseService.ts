@@ -5,6 +5,7 @@ import type {
   PagedResult,
   TableQuery,
   TabDataMap,
+  RiskChainData,
 } from '@/types/case';
 
 function buildQueryString(query: TableQuery) {
@@ -38,4 +39,8 @@ export function fetchTabTableData<T extends TabKey>(
 ) {
   const queryString = buildQueryString(query);
   return requestJson<PagedResult<TabDataMap[T]>>(`/api/cases/${caseId}/${tabKey}${queryString}`);
+}
+
+export function fetchRiskChain(caseId: string) {
+  return requestJson<RiskChainData>(`/api/cases/${caseId}/risk-chain`);
 }

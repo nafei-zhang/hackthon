@@ -82,6 +82,7 @@ export type BadConnectionRow = {
 };
 
 export type TabDataMap = {
+  'risk-chain': never;
   'kyc-profile': KycProfileRow;
   'previous-investigation': PreviousInvestigationRow;
   'transaction-review': TransactionReviewRow;
@@ -92,4 +93,46 @@ export type TabRequestConfig = {
   tabKey: TabKey;
   caseId: string;
   query: TableQuery;
+};
+
+export type RiskNode = {
+  id: string;
+  type: 'customer' | 'company';
+  name: string;
+  customerId?: string;
+  riskLevel: 'Low' | 'Medium' | 'High' | 'Critical';
+  isPrimary: boolean;
+  details?: CustomerDetails | CompanyDetails;
+};
+
+export type RiskEdge = {
+  id: string;
+  source: string;
+  target: string;
+  label: string;
+};
+
+export type RiskChainData = {
+  nodes: RiskNode[];
+  edges: RiskEdge[];
+};
+
+export type CustomerDetails = {
+  email: string;
+  mobile: string;
+  occupation: string;
+  employer: string;
+  salary: number;
+  nationality: string;
+  address: string;
+  customerSince: string;
+};
+
+export type CompanyDetails = {
+  registrationNumber: string;
+  industry: string;
+  foundedYear: number;
+  headquarters: string;
+  employees: number;
+  revenue: number;
 };

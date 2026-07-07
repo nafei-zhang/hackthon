@@ -6,6 +6,7 @@ import { Bot, LoaderCircle, MessageSquare, Send, UserRound, XCircle } from 'luci
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { MermaidRenderer } from './MermaidRenderer';
 
 const { TextArea } = Input;
 
@@ -181,6 +182,18 @@ export function AssistantChat({ caseId, activeTab }: AssistantChatProps) {
                       <div className="assistant-message-table-wrap">
                         <table {...props} />
                       </div>
+                    );
+                  },
+                  code({ node, inline, className, children, ...props }) {
+                    void node;
+                    const match = /language-(\w+)/.exec(className || '');
+                    if (!inline && match && match[1] === 'mermaid') {
+                      return <MermaidRenderer code={String(children).replace(/\n$/, '')} />;
+                    }
+                    return (
+                      <code className={className} {...props}>
+                        {children}
+                      </code>
                     );
                   },
                 }}

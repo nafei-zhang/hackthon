@@ -90,6 +90,11 @@ public class CaseController {
     return mockCaseDataService.buildBadConnectionsResponse(caseId, buildQuery(page, pageSize, keyword, globalSearch, sortField, sortOrder, filters));
   }
 
+  @GetMapping("/{caseId}/risk-chain")
+  public Map<String, Object> getRiskChain(@PathVariable String caseId) {
+    return mockCaseDataService.buildRiskChainResponse(caseId);
+  }
+
   private TableQuery buildQuery(
     Integer page,
     Integer pageSize,
