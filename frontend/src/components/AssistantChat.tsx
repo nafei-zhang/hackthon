@@ -228,7 +228,6 @@ export function AssistantChat({ caseId, activeTab }: AssistantChatProps) {
         open={open}
         onCancel={() => setOpen(false)}
         footer={null}
-        width={680}
         centered
         destroyOnHidden={false}
         rootClassName="assistant-modal-root"
